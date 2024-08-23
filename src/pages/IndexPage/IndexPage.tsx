@@ -13,16 +13,6 @@ export const IndexPage: FC = () => {
         header="Features"
         footer="You can use these pages to learn more about features, provided by Telegram Mini Apps and other useful projects"
       >
-        <Link to="/ton-connect">
-          <Cell
-            before={
-              <Image src={tonSvg} style={{ backgroundColor: "#007AFF" }} />
-            }
-            subtitle="Connect your TON wallet"
-          >
-            TON Connect
-          </Cell>
-        </Link>
         <Link to="/web3auth-connect">
           <Cell
             before={
@@ -31,6 +21,16 @@ export const IndexPage: FC = () => {
             subtitle="Connect your Web3Auth wallet"
           >
             Web3Auth
+          </Cell>
+        </Link>
+        <Link to="/ton-connect">
+          <Cell
+            before={
+              <Image src={tonSvg} style={{ backgroundColor: "#007AFF" }} />
+            }
+            subtitle="Connect your TON wallet"
+          >
+            TON Connect
           </Cell>
         </Link>
       </Section>
