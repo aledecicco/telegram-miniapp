@@ -157,7 +157,7 @@ And `vite.config.ts` should have this content:
 
 ```ts
 export default defineConfig({
-  base: '/is-awesome/',
+  base: "/is-awesome/",
   // ...
 });
 ```
@@ -170,9 +170,10 @@ You can find more information on configuring the deployment in the `gh-pages`
 Before deploying the application, make sure that you've built it and going to deploy the fresh
 static files:
 
+````bash
 ```bash
 npm run build
-```
+````
 
 Then, run the deployment process, using the `deploy` script:
 
