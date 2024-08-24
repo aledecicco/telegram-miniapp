@@ -1,6 +1,6 @@
-import WebApp from '@twa-dev/sdk';
-import { AppRoot } from '@telegram-apps/telegram-ui';
-import { type FC, useEffect } from 'react';
+import WebApp from "@twa-dev/sdk";
+import { AppRoot } from "@telegram-apps/telegram-ui";
+import { type FC, useEffect } from "react";
 import {
   Navigate,
   Route,
@@ -8,9 +8,10 @@ import {
   Routes,
   useLocation,
   useNavigate,
-} from 'react-router-dom';
+} from "react-router-dom";
 
-import { routes } from '@/navigation/routes.tsx';
+import { routes } from "@/navigation/routes.tsx";
+import { Web3Provider } from "./Web3Provider";
 
 function BackButtonManipulator() {
   const location = useLocation();
@@ -26,7 +27,7 @@ function BackButtonManipulator() {
   }, [navigate]);
 
   useEffect(() => {
-    if (location.pathname === '/') {
+    if (location.pathname === "/") {
       WebApp.BackButton.isVisible && WebApp.BackButton.hide();
     } else {
       !WebApp.BackButton.isVisible && WebApp.BackButton.show();
@@ -39,14 +40,18 @@ function BackButtonManipulator() {
 export const App: FC = () => (
   <AppRoot
     appearance={WebApp.colorScheme}
-    platform={['macos', 'ios'].includes(WebApp.platform) ? 'ios' : 'base'}
+    platform={["macos", "ios"].includes(WebApp.platform) ? "ios" : "base"}
   >
-    <BrowserRouter>
-      <BackButtonManipulator/>
-      <Routes>
-        {routes.map((route) => <Route key={route.path} {...route} />)}
-        <Route path='*' element={<Navigate to='/'/>}/>
-      </Routes>
-    </BrowserRouter>
+    <Web3Provider>
+      <BrowserRouter>
+        <BackButtonManipulator />
+        <Routes>
+          {routes.map((route) => (
+            <Route key={route.path} {...route} />
+          ))}
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </BrowserRouter>
+    </Web3Provider>
   </AppRoot>
 );

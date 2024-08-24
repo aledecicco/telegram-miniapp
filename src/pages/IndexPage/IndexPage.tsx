@@ -1,59 +1,193 @@
-import { Section, Cell, Image, List } from "@telegram-apps/telegram-ui";
-import type { FC } from "react";
+import { FC, useCallback, useEffect, useRef, useState } from "react";
+import { Button, Placeholder, Section } from "@telegram-apps/telegram-ui";
+import { SectionHeader } from "@telegram-apps/telegram-ui/dist/components/Blocks/Section/components/SectionHeader/SectionHeader";
+import { useWeb3Auth } from "@web3auth/no-modal-react-hooks";
+import { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
+import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+import * as jose from "jose";
+import { WALLET_ADAPTERS } from "@web3auth/base";
+import { AuthDataValidator } from "@telegram-auth/server";
+import { objectToAuthDataMap } from "@telegram-auth/server/utils";
 
-import { Link } from "@/components/Link/Link.tsx";
+import { KEY_PREFIX, RPC_URL, getPrivateKey } from "@/components/Web3Provider";
 
-import tonSvg from "./ton.svg";
-import web3AuthPng from "./web3auth.png";
+const pk = `-----BEGIN PRIVATE KEY-----
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCqbMbFncm9/Kyg
+tLjKR9yxiW9c8/mV+bPFSyiB82kNn0TjaYjxO90fBN4MkeepUkiZmo9usP1eae0S
+v5UPsQ2hy7BQKN/n2DX+yXq242bThiiEzT7eqxlC63fN5lscmthrCywJ9zQzPtom
+SffGgAsKyAmRPPBFtNhzlWvjUBeJfrv6M8VsI+w6g0yi26KbRFGzR289pUCP4dBe
+N9ZfeJlRuqzBT0ns4w4JvW+23EMTb0gVQ0xrfo7BwAB9jC97JbZsfe7UG3wYMe6U
+y+Yto3y7KTAqsAYVB4zcWTa1E41SBy6XbuShyyN5ni8WnEDWNkvWu1zwW9QIlwJc
+5B9oNJ5rAgMBAAECggEABnqfLekbP9VIzM1CDzKfMcKrUKnXzbtR+cirMBGMZ1+s
+M0cSVTV06RZ6yJiNaZL+vpQxKsCgyUOWpzVQWendvk5rlAiRxpMiLl8DgstvX9BE
+XxQcdUOk8LXZ9qJwyUwbuSoSEQjsW5xil70NJec9RDopnvNloQjIh9Bg6yHi2y+9
+yQcKpCZlwXYVxAsjh3S4E2G66nUcOsO6MRMj0oEkOEXJp9p8Exg1eNDRRD6AzXA1
+sMMqnRPdV6isc6iQGRwzwgnrQiw1tf3cnHzs9ogBKfHi7pFZe3awmZcOCNS6dSVS
+OIyyJA3wLiywAJrNe6l79ikVim+/35Xnr0jikEuU+QKBgQDmo14IAckT3j2uqqWU
+HyhkfYGafHR/volxDo6PFX0qltTpRt0IGe+i0OQDg7LiI3K7zCBar3VSseUf/O5U
+bY3swgXeH4nfd7VWAyt8OUfSnuG3uz4dNeAtVUIMeCcRdSfwYY2t2XCz1VzFunT4
+kyJ2s5Oe0aQ98v6oSVEU7Y/dUwKBgQC9Kly8NtJ0gKldBM7JONWKQIewQmUi2n6M
+VfI9t+18qVOcKYRMChke+sJLrGDOoN5Ga0OUduNUDS6OEDUTjCY2P0iDXTwwDTAj
+z0W+HFS1eC7tD3/g4F593IK7Ey42ubP/zbNRHLPNzMCY2f10SzKyMAur4T5CQgFv
+ydg08ol/iQKBgQC5HgMJNjWohsbHfRxtaRzIm5v83Uu8hLhYUDDIU50lI+88Va5v
+JDIdYsDAuWJI897RMSP+5bmraDHZnO/GQDCcCZcgE/xbqv+XS/AJQwiM2w2cpONU
+GrwWZsoerAnfj0NBQ2uuUEqPbP+LjP75zU7qK3SfEvFa78DKXh6AR7UjFQKBgCGk
+zymKdpPR7k1k9YJEYXZdU8S9ik9QnQFIp/TiKZLqarxzhdwgT6d64eOjnPQjGGVd
+3n8hRf1E+uq5Zzc6zfEIAFWc13+UWOOFkdnmIArGfVIcV5ofTa8E8RtkpeuFy8XL
+SAE9IZ2QtRB6dOGiHjoi4XCIdxJBuw+uzo1cNahBAoGBAMO3pjop9588RbgotR8p
+F15l8LAfbLFWasbz4W2Q+X7PbkdQ3gkSvB5dCUFGYRv7RyMgHwB5V8GZQHn04qSj
+1Oijpijyhhh9z5RHcGdRoSFCeZBi20khQAJ4EhNeCZSF53uTKjoGhIJZPb2u3kcg
+HI1ci7B6etIgEjOlOkhU9eP6
+-----END PRIVATE KEY-----
+`;
+
+const privateKey = await jose.importPKCS8(pk, "RS256");
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const generateJwtToken = async () => {
+  try {
+    const initData = Object.fromEntries(
+      new URLSearchParams(window.Telegram.WebApp.initData)
+    );
+    const validator = new AuthDataValidator({
+      botToken: "7411142733:AAHwKdl1FVOU_Dtw7UMRDi_4mG9aHr2FN0g",
+    });
+    const data = objectToAuthDataMap(initData || {});
+    const user = await validator.validate(data);
+
+    const payload = {
+      telegram_id: user.id,
+      username: user.username,
+      avatar_url: user.photo_url,
+      sub: user.id.toString(),
+      name: user.first_name,
+      iss: "https://api.telegram.org",
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + 60 * 60,
+    };
+
+    return new jose.SignJWT(payload)
+      .setProtectedHeader({
+        alg: "RS256",
+        keyid: "b183cbbf2eedc92b022998f",
+      })
+      .sign(privateKey);
+  } catch (err) {
+    console.log("Failed", err);
+    throw err;
+  }
+};
 
 export const IndexPage: FC = () => {
+  const web3Auth = useWeb3Auth();
+  const [connecting, setConnecting] = useState(false);
+  const ref = useRef(false);
+
+  const connect = useCallback(async () => {
+    try {
+      setConnecting(true);
+      try {
+        await web3Auth.init();
+      } catch {
+        /* empty */
+      }
+      await web3Auth.connectTo(WALLET_ADAPTERS.OPENLOGIN, {
+        loginProvider: "jwt",
+        extraLoginOptions: {
+          id_token: await generateJwtToken(),
+          verifierIdField: "sub",
+        },
+      });
+    } finally {
+      setConnecting(false);
+    }
+  }, []);
+
+  console.log(web3Auth.web3Auth);
+  console.log(web3Auth.userInfo);
+  useEffect(() => {
+    if (!ref.current && web3Auth.status !== null) {
+      ref.current = true;
+      web3Auth.init();
+    }
+  }, [web3Auth.status]);
+
+  const [offlineSigner, setOfflineSigner] = useState<DirectSecp256k1Wallet>();
+  const [address, setAddress] = useState<string>();
+  const [, setSigner] = useState<SigningCosmWasmClient>();
+
+  useEffect(() => {
+    (async () => {
+      if (web3Auth.provider) {
+        const privateKey = await getPrivateKey(web3Auth.provider);
+        const offlineSigner = await DirectSecp256k1Wallet.fromKey(
+          privateKey,
+          KEY_PREFIX
+        );
+        setOfflineSigner(offlineSigner);
+      } else {
+        return undefined;
+      }
+    })();
+  }, [web3Auth.provider]);
+
+  useEffect(() => {
+    (async () => {
+      if (offlineSigner) {
+        const account = (await offlineSigner.getAccounts())[0];
+        const signer = await SigningCosmWasmClient.connectWithSigner(
+          RPC_URL,
+          offlineSigner
+        );
+        setAddress(account.address);
+        setSigner(signer);
+      } else {
+        setAddress(undefined);
+        setSigner(undefined);
+      }
+    })();
+  }, [offlineSigner]);
+
   return (
-    <List>
-      <Section
-        header="Features"
-        footer="You can use these pages to learn more about features, provided by Telegram Mini Apps and other useful projects"
-      >
-        <Link to="/web3auth-connect">
-          <Cell
-            before={
-              <Image src={web3AuthPng} style={{ backgroundColor: "#FFFFFF" }} />
-            }
-            subtitle="Connect your Web3Auth wallet"
+    <Section>
+      <SectionHeader>Web3Auth Connection</SectionHeader>
+
+      <Placeholder
+        header="Web3Auth"
+        description="Connect to your wallet using your Telegram credentials"
+        action={
+          <Button
+            disabled={connecting}
+            onClick={async () => {
+              if (web3Auth.isConnected) {
+                web3Auth.logout();
+              } else {
+                connect();
+              }
+            }}
           >
-            Web3Auth
-          </Cell>
-        </Link>
-        <Link to="/ton-connect">
-          <Cell
-            before={
-              <Image src={tonSvg} style={{ backgroundColor: "#007AFF" }} />
-            }
-            subtitle="Connect your TON wallet"
-          >
-            TON Connect
-          </Cell>
-        </Link>
-      </Section>
-      <Section
-        header="Application Launch Data"
-        footer="These pages help developer to learn more about current launch information"
+            {connecting
+              ? "Connecting"
+              : web3Auth.isConnected
+              ? "Disconnect"
+              : "Connect"}
+          </Button>
+        }
       >
-        <Link to="/init-data">
-          <Cell subtitle="User data, chat information, technical data">
-            Init Data
-          </Cell>
-        </Link>
-        <Link to="/launch-params">
-          <Cell subtitle="Platform identifier, Mini Apps version, etc.">
-            Launch Parameters
-          </Cell>
-        </Link>
-        <Link to="/theme-params">
-          <Cell subtitle="Telegram application palette information">
-            Theme Parameters
-          </Cell>
-        </Link>
-      </Section>
-    </List>
+        <img
+          alt="Web3Auth Logo"
+          src="https://web3auth.io/images/BrandLogo.png"
+          style={{ display: "block", width: "75px" }}
+        />
+      </Placeholder>
+
+      {web3Auth.isConnected && (
+        <Placeholder
+          header="You're connected!"
+          description={<div>Your address is {address || "..."}</div>}
+        />
+      )}
+    </Section>
   );
 };
