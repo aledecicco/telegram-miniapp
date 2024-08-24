@@ -104,8 +104,6 @@ export const IndexPage: FC = () => {
     }
   }, []);
 
-  console.log(web3Auth.web3Auth);
-  console.log(web3Auth.userInfo);
   useEffect(() => {
     if (!ref.current && web3Auth.status !== null) {
       ref.current = true;
@@ -117,9 +115,11 @@ export const IndexPage: FC = () => {
   const [address, setAddress] = useState<string>();
   const [, setSigner] = useState<SigningCosmWasmClient>();
 
+  const [balance, setBalance] = useState<string>();
+
   useEffect(() => {
     (async () => {
-      if (web3Auth.provider) {
+      if (web3Auth.isConnected && web3Auth.provider) {
         const privateKey = await getPrivateKey(web3Auth.provider);
         const offlineSigner = await DirectSecp256k1Wallet.fromKey(
           privateKey,
@@ -127,10 +127,10 @@ export const IndexPage: FC = () => {
         );
         setOfflineSigner(offlineSigner);
       } else {
-        return undefined;
+        setOfflineSigner(undefined);
       }
     })();
-  }, [web3Auth.provider]);
+  }, [web3Auth]);
 
   useEffect(() => {
     (async () => {
@@ -142,9 +142,13 @@ export const IndexPage: FC = () => {
         );
         setAddress(account.address);
         setSigner(signer);
+
+        const balance = await signer.getBalance(account.address, "uosmo");
+        setBalance(balance.amount);
       } else {
         setAddress(undefined);
         setSigner(undefined);
+        setBalance(undefined);
       }
     })();
   }, [offlineSigner]);
@@ -186,6 +190,13 @@ export const IndexPage: FC = () => {
         <Placeholder
           header="You're connected!"
           description={<div>Your address is {address || "..."}</div>}
+        />
+      )}
+
+      {balance !== undefined && (
+        <Placeholder
+          header="Your balance"
+          description={<div>{balance} uOSMO</div>}
         />
       )}
     </Section>
