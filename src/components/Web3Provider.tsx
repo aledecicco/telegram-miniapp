@@ -38,6 +38,7 @@ const openloginAdapter = new OpenloginAdapter({
   adapterSettings: {
     uxMode: "redirect",
     replaceUrlOnRedirect: true,
+    redirectUrl: "https://aledecicco.github.io/telegram-miniapp",
     loginConfig: {
       jwt: {
         verifier: "telegram-verifier-111",
