@@ -12,7 +12,7 @@ import { AuthDataValidator } from "@telegram-auth/server";
 import { objectToAuthDataMap } from "@telegram-auth/server/utils";
 
 import { KEY_PREFIX, RPC_URL, getPrivateKey } from "@/components/Web3Provider";
-import { base64toJSON } from "@web3auth/openlogin-adapter";
+//import { base64toJSON } from "@web3auth/openlogin-adapter";
 
 const pk = `-----BEGIN PRIVATE KEY-----
 MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCqbMbFncm9/Kyg
@@ -80,9 +80,7 @@ const generateJwtToken = async () => {
     alert(e);
   }
 };
-const b64 = new URLSearchParams(window.location.hash.substring(1)).get(
-  "b64Params"
-);
+//const b64 = new URLSearchParams(window.location.hash.substring(1)).get("b64Params");
 
 // TODO: https://core.telegram.org/api/url-authorization
 
@@ -96,17 +94,15 @@ export const IndexPage: FC = () => {
     try {
       setConnecting(true);
 
-      b64
-        ? alert(JSON.stringify(base64toJSON(b64)))
-        : web3Auth
-            .connectTo(WALLET_ADAPTERS.OPENLOGIN, {
-              loginProvider: "jwt",
-              extraLoginOptions: {
-                id_token: await generateJwtToken(),
-                verifierIdField: "sub",
-              },
-            })
-            .then((a) => alert(a?.chainId));
+      const a = await web3Auth.connectTo(WALLET_ADAPTERS.OPENLOGIN, {
+        loginProvider: "jwt",
+        extraLoginOptions: {
+          id_token: await generateJwtToken(),
+          verifierIdField: "sub",
+        },
+      });
+
+      alert(a?.eventNames);
     } catch (e) {
       alert(e);
     } finally {
@@ -117,7 +113,10 @@ export const IndexPage: FC = () => {
   useEffect(() => {
     if (web3Auth.status !== null && !ref.current) {
       ref.current = true;
-      web3Auth.init().then(() => setStarting(false));
+      web3Auth.init().then(() => {
+        setStarting(false);
+        alert("INIT");
+      });
     }
   }, [web3Auth.status]);
 
