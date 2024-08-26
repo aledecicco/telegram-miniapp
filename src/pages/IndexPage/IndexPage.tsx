@@ -1,5 +1,6 @@
 import { FC, useCallback, useEffect, useRef, useState } from "react";
 import { Button, Placeholder, Section } from "@telegram-apps/telegram-ui";
+import { Icon20Copy } from "@telegram-apps/telegram-ui/dist/icons/20/copy";
 import { SectionHeader } from "@telegram-apps/telegram-ui/dist/components/Blocks/Section/components/SectionHeader/SectionHeader";
 import { useWeb3Auth } from "@web3auth/no-modal-react-hooks";
 import { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
@@ -188,9 +189,38 @@ export const IndexPage: FC = () => {
 
       {web3Auth.isConnected && (
         <Placeholder
-          header="You're connected!"
-          description={<div>Your address is {address || "..."}</div>}
-        />
+          header={
+            web3Auth.userInfo?.name
+              ? `${web3Auth.userInfo?.name}, you're connected!`
+              : "You're connected!"
+          }
+          description={
+            <>
+              <div>Your address is</div>
+              <Button
+                size="s"
+                mode="bezeled"
+                onClick={() => {
+                  if (address) {
+                    navigator.clipboard.writeText(address);
+                  }
+                }}
+                before={<Icon20Copy />}
+              >
+                {address
+                  ? `${address.slice(0, 8)}...${address.slice(-6)}`
+                  : "..."}
+              </Button>
+            </>
+          }
+        >
+          {web3Auth.userInfo?.profileImage && (
+            <img
+              src={web3Auth.userInfo?.profileImage}
+              alt="Your profile image"
+            />
+          )}
+        </Placeholder>
       )}
 
       {balance !== undefined && (
