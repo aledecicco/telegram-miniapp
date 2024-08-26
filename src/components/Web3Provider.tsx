@@ -36,6 +36,8 @@ const web3Options: Web3AuthNoModalOptions = {
 
 const openloginAdapter = new OpenloginAdapter({
   adapterSettings: {
+    uxMode: "redirect",
+    replaceUrlOnRedirect: false,
     loginConfig: {
       jwt: {
         verifier: "telegram-verifier-111",
