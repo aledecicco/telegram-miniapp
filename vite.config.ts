@@ -27,6 +27,9 @@ export default defineConfig({
     // Exposes your dev server and makes it accessible for the devices in the same network.
     host: true,
   },
+  build: {
+    target: "esnext",
+  },
   optimizeDeps: {
     esbuildOptions: {
       target: "esnext",
