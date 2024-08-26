@@ -79,11 +79,13 @@ const generateJwtToken = async () => {
     throw err;
   }
 };
+const token = await generateJwtToken();
 
 export const IndexPage: FC = () => {
   const web3Auth = useWeb3Auth();
   const [connecting, setConnecting] = useState(false);
   const ref = useRef(false);
+  const [starting, setStarting] = useState(true);
 
   const connect = useCallback(async () => {
     try {
@@ -96,19 +98,21 @@ export const IndexPage: FC = () => {
       await web3Auth.connectTo(WALLET_ADAPTERS.OPENLOGIN, {
         loginProvider: "jwt",
         extraLoginOptions: {
-          id_token: await generateJwtToken(),
+          id_token: token,
           verifierIdField: "sub",
         },
       });
+    } catch (e) {
+      alert(e);
     } finally {
       setConnecting(false);
     }
   }, []);
 
   useEffect(() => {
-    if (!ref.current && web3Auth.status !== null) {
+    if (web3Auth.status !== null && !ref.current) {
       ref.current = true;
-      web3Auth.init();
+      web3Auth.init().then(() => setStarting(false));
     }
   }, [web3Auth.status]);
 
@@ -120,15 +124,19 @@ export const IndexPage: FC = () => {
 
   useEffect(() => {
     (async () => {
-      if (web3Auth.isConnected && web3Auth.provider) {
-        const privateKey = await getPrivateKey(web3Auth.provider);
-        const offlineSigner = await DirectSecp256k1Wallet.fromKey(
-          privateKey,
-          KEY_PREFIX
-        );
-        setOfflineSigner(offlineSigner);
-      } else {
-        setOfflineSigner(undefined);
+      try {
+        if (web3Auth.isConnected && web3Auth.provider) {
+          const privateKey = await getPrivateKey(web3Auth.provider);
+          const offlineSigner = await DirectSecp256k1Wallet.fromKey(
+            privateKey,
+            KEY_PREFIX
+          );
+          setOfflineSigner(offlineSigner);
+        } else {
+          setOfflineSigner(undefined);
+        }
+      } catch (e) {
+        alert(e);
       }
     })();
   }, [web3Auth]);
@@ -136,16 +144,20 @@ export const IndexPage: FC = () => {
   useEffect(() => {
     (async () => {
       if (offlineSigner) {
-        const account = (await offlineSigner.getAccounts())[0];
-        const signer = await SigningCosmWasmClient.connectWithSigner(
-          RPC_URL,
-          offlineSigner
-        );
-        setAddress(account.address);
-        setSigner(signer);
+        try {
+          const account = (await offlineSigner.getAccounts())[0];
+          const signer = await SigningCosmWasmClient.connectWithSigner(
+            RPC_URL,
+            offlineSigner
+          );
+          setAddress(account.address);
+          setSigner(signer);
 
-        const balance = await signer.getBalance(account.address, "uosmo");
-        setBalance(balance.amount);
+          const balance = await signer.getBalance(account.address, "uosmo");
+          setBalance(balance.amount);
+        } catch (e) {
+          alert(e);
+        }
       } else {
         setAddress(undefined);
         setSigner(undefined);
@@ -163,16 +175,18 @@ export const IndexPage: FC = () => {
         description="Connect to your wallet using your Telegram credentials"
         action={
           <Button
-            disabled={connecting}
-            onClick={async () => {
+            disabled={connecting || starting}
+            onClick={() => {
               if (web3Auth.isConnected) {
-                web3Auth.logout();
+                return web3Auth.logout();
               } else {
-                connect();
+                return connect();
               }
             }}
           >
-            {connecting
+            {starting
+              ? "Initializing"
+              : connecting
               ? "Connecting"
               : web3Auth.isConnected
               ? "Disconnect"
@@ -211,6 +225,9 @@ export const IndexPage: FC = () => {
                   ? `${address.slice(0, 8)}...${address.slice(-6)}`
                   : "..."}
               </Button>
+              <div>
+                {address} on chain {web3Auth.provider?.chainId}
+              </div>
             </>
           }
         >
