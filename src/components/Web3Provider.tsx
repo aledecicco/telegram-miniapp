@@ -37,7 +37,7 @@ const web3Options: Web3AuthNoModalOptions = {
 const openloginAdapter = new OpenloginAdapter({
   adapterSettings: {
     uxMode: "redirect",
-    replaceUrlOnRedirect: true,
+    replaceUrlOnRedirect: false,
     redirectUrl: "https://aledecicco.github.io/telegram-miniapp",
     loginConfig: {
       jwt: {
