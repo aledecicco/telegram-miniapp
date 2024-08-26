@@ -49,7 +49,8 @@ const privateKey = await jose.importPKCS8(pk, "RS256");
 const generateJwtToken = async () => {
   try {
     const initData = Object.fromEntries(
-      new URLSearchParams(window.Telegram.WebApp.initData)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      new URLSearchParams((window as any).Telegram.WebApp.initData)
     );
     const validator = new AuthDataValidator({
       botToken: "7411142733:AAHwKdl1FVOU_Dtw7UMRDi_4mG9aHr2FN0g",
