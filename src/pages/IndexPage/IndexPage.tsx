@@ -130,7 +130,7 @@ export const IndexPage: FC = () => {
         setBalance(undefined);
       }
     })();
-  }, [web3Auth.status]);
+  }, [web3Auth.provider, web3Auth.status]);
 
   useEffect(() => {
     (async () => {
