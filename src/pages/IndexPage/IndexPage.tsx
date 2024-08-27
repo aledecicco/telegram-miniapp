@@ -100,6 +100,11 @@ export const IndexPage: FC = () => {
     try {
       setConnecting(true);
 
+      try {
+        await web3Auth.init();
+      } catch {
+        //
+      }
       await web3Auth.connectTo(WALLET_ADAPTERS.OPENLOGIN, {
         loginProvider: "jwt",
         extraLoginOptions: {
@@ -144,7 +149,7 @@ export const IndexPage: FC = () => {
         ref.current = true;
         try {
           console.log("init");
-          await web3Auth.init;
+          await web3Auth.init();
           setStarting(false);
           console.log("initt");
         } catch (e) {
