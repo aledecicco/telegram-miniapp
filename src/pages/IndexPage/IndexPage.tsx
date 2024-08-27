@@ -118,6 +118,8 @@ export const IndexPage: FC = () => {
         alert("INIT");
       });
     }
+
+    console.log(web3Auth.status);
   }, [web3Auth.status]);
 
   const [offlineSigner, setOfflineSigner] = useState<DirectSecp256k1Wallet>();
@@ -143,7 +145,7 @@ export const IndexPage: FC = () => {
         alert(e);
       }
     })();
-  }, [web3Auth]);
+  }, [web3Auth.status]);
 
   useEffect(() => {
     (async () => {
