@@ -76,14 +76,23 @@ const generateJwtToken = async () => {
     })
     .sign(privateKey);
 };
-//const b64 = new URLSearchParams(window.location.hash.substring(1)).get("b64Params");
-const Tt = new URLSearchParams(window.location.hash.substring(1)).get("state");
+
+const sessionIdParam = new URLSearchParams(
+  window.location.hash.substring(1)
+).get("b64Params");
+
+if (sessionIdParam) {
+  const sessionIdState = JSON.parse(
+    Buffer.from(sessionIdParam, "base64").toString("utf-8")
+  );
+
+  localStorage.setItem("openlogin_store", sessionIdState);
+}
 
 // TODO: https://core.telegram.org/api/url-authorization
 
 export const IndexPage: FC = () => {
   const web3Auth = useWeb3Auth();
-  const [connecting, setConnecting] = useState(false);
   const ref = useRef(false);
   const [starting, setStarting] = useState(true);
 
@@ -94,26 +103,13 @@ export const IndexPage: FC = () => {
   const [balance, setBalance] = useState<string>();
 
   const connect = useCallback(async () => {
-    try {
-      setConnecting(true);
-
-      const T = Tt ? Tt : await generateJwtToken();
-      console.log(Tt ? "Y" : "N", T);
-      //const tD = jose.decodeJwt(T);
-
-      await web3Auth.connectTo(WALLET_ADAPTERS.OPENLOGIN, {
-        loginProvider: "jwt",
-        appState: T,
-        extraLoginOptions: {
-          id_token: T,
-          verifierIdField: "sub",
-        },
-      });
-    } catch (e) {
-      console.log(e);
-    } finally {
-      setConnecting(false);
-    }
+    await web3Auth.connectTo(WALLET_ADAPTERS.OPENLOGIN, {
+      loginProvider: "jwt",
+      extraLoginOptions: {
+        id_token: await generateJwtToken(),
+        verifierIdField: "sub",
+      },
+    });
   }, [web3Auth.connectTo]);
 
   useEffect(() => {
@@ -166,7 +162,7 @@ export const IndexPage: FC = () => {
         description="Connect to your wallet using your Telegram credentials"
         action={
           <Button
-            disabled={connecting || starting}
+            disabled={web3Auth.status === "connecting" || starting}
             onClick={() => {
               if (web3Auth.isConnected) {
                 return web3Auth.logout();
@@ -177,7 +173,7 @@ export const IndexPage: FC = () => {
           >
             {starting
               ? "Initializing"
-              : connecting
+              : web3Auth.status === "connecting"
               ? "Connecting"
               : web3Auth.isConnected
               ? "Disconnect"
