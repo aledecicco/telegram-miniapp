@@ -99,16 +99,14 @@ export const IndexPage: FC = () => {
       setConnecting(true);
 
       const T = Tt ? atob(Tt) : await generateJwtToken();
-      const tD = jose.decodeJwt(T);
+      //const tD = jose.decodeJwt(T);
 
       await web3Auth.connectTo(WALLET_ADAPTERS.OPENLOGIN, {
         loginProvider: "jwt",
         appState: T || "",
         extraLoginOptions: {
-          idToken: T,
-          verifier: "telegram-verifier-111",
+          id_token: T,
           verifierIdField: "sub",
-          verifierId: tD.sub,
         },
       });
     } catch (e) {
