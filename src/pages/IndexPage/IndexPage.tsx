@@ -100,16 +100,25 @@ export const IndexPage: FC = () => {
     try {
       setConnecting(true);
 
-      const provider = await web3Auth.connectTo(WALLET_ADAPTERS.OPENLOGIN, {
+      await web3Auth.connectTo(WALLET_ADAPTERS.OPENLOGIN, {
         loginProvider: "jwt",
         extraLoginOptions: {
           id_token: await generateJwtToken(),
           verifierIdField: "sub",
         },
       });
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setConnecting(false);
+    }
+  }, [web3Auth]);
 
-      if (provider) {
-        const privateKey = await getPrivateKey(provider);
+  useEffect(() => {
+    (async () => {
+      if (web3Auth.provider) {
+        console.log("building");
+        const privateKey = await getPrivateKey(web3Auth.provider);
         const offlineSigner = await DirectSecp256k1Wallet.fromKey(
           privateKey,
           KEY_PREFIX
@@ -126,12 +135,8 @@ export const IndexPage: FC = () => {
         const balance = await signer.getBalance(account.address, "uosmo");
         setBalance(balance.amount);
       }
-    } catch (e) {
-      console.log(e);
-    } finally {
-      setConnecting(false);
-    }
-  }, [web3Auth]);
+    })();
+  }, [web3Auth.provider]);
 
   useEffect(() => {
     (async () => {
