@@ -5,14 +5,12 @@ import { SectionHeader } from "@telegram-apps/telegram-ui/dist/components/Blocks
 import { useWeb3Auth } from "@web3auth/no-modal-react-hooks";
 import { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 import * as jose from "jose";
 import { WALLET_ADAPTERS } from "@web3auth/base";
 import { AuthDataValidator } from "@telegram-auth/server";
 import { objectToAuthDataMap } from "@telegram-auth/server/utils";
 
 import { KEY_PREFIX, RPC_URL, getPrivateKey } from "@/components/Web3Provider";
-//import { base64toJSON } from "@web3auth/openlogin-adapter";
 
 const pk = `-----BEGIN PRIVATE KEY-----
 MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCqbMbFncm9/Kyg
@@ -85,22 +83,18 @@ if (sessionIdParam) {
   const sessionIdState = Buffer.from(sessionIdParam, "base64").toString(
     "utf-8"
   );
-  console.log(sessionIdState);
+  console.log(sessionIdParam);
 
   localStorage.setItem("openlogin_store", sessionIdState);
 }
-
-// TODO: https://core.telegram.org/api/url-authorization
 
 export const IndexPage: FC = () => {
   const web3Auth = useWeb3Auth();
   const ref = useRef(false);
   const [starting, setStarting] = useState(true);
 
-  const [, setOfflineSigner] = useState<DirectSecp256k1Wallet>();
   const [address, setAddress] = useState<string>();
   const [, setSigner] = useState<SigningCosmWasmClient>();
-
   const [balance, setBalance] = useState<string>();
 
   const connect = useCallback(async () => {
@@ -115,43 +109,42 @@ export const IndexPage: FC = () => {
 
   useEffect(() => {
     (async () => {
-      if (web3Auth.provider) {
-        console.log("building");
+      if (web3Auth.provider && web3Auth.isConnected) {
         const privateKey = await getPrivateKey(web3Auth.provider);
         const offlineSigner = await DirectSecp256k1Wallet.fromKey(
           privateKey,
           KEY_PREFIX
         );
-        setOfflineSigner(offlineSigner);
         const account = (await offlineSigner.getAccounts())[0];
-        setAddress(account.address);
-        console.log(account.address);
         const signer = await SigningCosmWasmClient.connectWithSigner(
           RPC_URL,
           offlineSigner
         );
-        setSigner(signer);
         const balance = await signer.getBalance(account.address, "uosmo");
+        setAddress(account.address);
+        setSigner(signer);
         setBalance(balance.amount);
+      } else {
+        setAddress(undefined);
+        setSigner(undefined);
+        setBalance(undefined);
       }
     })();
-  }, [web3Auth.provider]);
+  }, [web3Auth.status]);
 
   useEffect(() => {
     (async () => {
       if (web3Auth.status !== null && !ref.current) {
         ref.current = true;
         try {
-          console.log("init");
           await web3Auth.init();
           setStarting(false);
-          console.log("initt");
         } catch (e) {
           console.log(e);
         }
       }
     })();
-    console.log("S", web3Auth.status);
+    console.log("status", web3Auth.status);
   }, [web3Auth.status]);
 
   return (
