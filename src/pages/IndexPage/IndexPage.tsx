@@ -108,10 +108,10 @@ export const IndexPage: FC = () => {
       const T = await generateJwtToken();
       await web3Auth.connectTo(WALLET_ADAPTERS.OPENLOGIN, {
         loginProvider: "jwt",
+        appState: T || "",
         extraLoginOptions: {
           id_token: T,
           verifierIdField: "sub",
-          appState: T || "",
         },
       });
     } catch (e) {
