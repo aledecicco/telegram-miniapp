@@ -90,11 +90,17 @@ export const IndexPage: FC = () => {
   const ref = useRef(false);
   const [starting, setStarting] = useState(true);
 
+  const [, setOfflineSigner] = useState<DirectSecp256k1Wallet>();
+  const [address, setAddress] = useState<string>();
+  const [, setSigner] = useState<SigningCosmWasmClient>();
+
+  const [balance, setBalance] = useState<string>();
+
   const connect = useCallback(async () => {
     try {
       setConnecting(true);
 
-      const a = await web3Auth.connectTo(WALLET_ADAPTERS.OPENLOGIN, {
+      const provider = await web3Auth.connectTo(WALLET_ADAPTERS.OPENLOGIN, {
         loginProvider: "jwt",
         extraLoginOptions: {
           id_token: await generateJwtToken(),
@@ -102,75 +108,47 @@ export const IndexPage: FC = () => {
         },
       });
 
-      alert(a?.eventNames);
+      if (provider) {
+        const privateKey = await getPrivateKey(provider);
+        const offlineSigner = await DirectSecp256k1Wallet.fromKey(
+          privateKey,
+          KEY_PREFIX
+        );
+        setOfflineSigner(offlineSigner);
+        const account = (await offlineSigner.getAccounts())[0];
+        setAddress(account.address);
+        console.log(account.address);
+        const signer = await SigningCosmWasmClient.connectWithSigner(
+          RPC_URL,
+          offlineSigner
+        );
+        setSigner(signer);
+        const balance = await signer.getBalance(account.address, "uosmo");
+        setBalance(balance.amount);
+      }
     } catch (e) {
-      alert(e);
+      console.log(e);
     } finally {
       setConnecting(false);
     }
-  }, []);
-
-  useEffect(() => {
-    if (web3Auth.status !== null && !ref.current) {
-      ref.current = true;
-      web3Auth.init().then(() => {
-        setStarting(false);
-        alert("INIT");
-      });
-    }
-
-    console.log(web3Auth.status);
-  }, [web3Auth.status]);
-
-  const [offlineSigner, setOfflineSigner] = useState<DirectSecp256k1Wallet>();
-  const [address, setAddress] = useState<string>();
-  const [, setSigner] = useState<SigningCosmWasmClient>();
-
-  const [balance, setBalance] = useState<string>();
+  }, [web3Auth]);
 
   useEffect(() => {
     (async () => {
-      try {
-        if (web3Auth.isConnected && web3Auth.provider) {
-          const privateKey = await getPrivateKey(web3Auth.provider);
-          const offlineSigner = await DirectSecp256k1Wallet.fromKey(
-            privateKey,
-            KEY_PREFIX
-          );
-          setOfflineSigner(offlineSigner);
-        } else {
-          setOfflineSigner(undefined);
-        }
-      } catch (e) {
-        alert(e);
-      }
-    })();
-  }, [web3Auth.status]);
-
-  useEffect(() => {
-    (async () => {
-      if (offlineSigner) {
+      if (web3Auth.status !== null && !ref.current) {
+        ref.current = true;
         try {
-          const account = (await offlineSigner.getAccounts())[0];
-          const signer = await SigningCosmWasmClient.connectWithSigner(
-            RPC_URL,
-            offlineSigner
-          );
-          setAddress(account.address);
-          setSigner(signer);
-
-          const balance = await signer.getBalance(account.address, "uosmo");
-          setBalance(balance.amount);
+          console.log("init");
+          await web3Auth.init;
+          setStarting(false);
+          console.log("initt");
         } catch (e) {
-          alert(e);
+          console.log(e);
         }
-      } else {
-        setAddress(undefined);
-        setSigner(undefined);
-        setBalance(undefined);
       }
     })();
-  }, [offlineSigner]);
+    console.log("S", web3Auth.status);
+  }, [web3Auth.status]);
 
   return (
     <Section>
