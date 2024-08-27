@@ -78,7 +78,6 @@ const generateJwtToken = async () => {
 };
 //const b64 = new URLSearchParams(window.location.hash.substring(1)).get("b64Params");
 const Tt = new URLSearchParams(window.location.hash.substring(1)).get("state");
-console.log(Tt);
 
 // TODO: https://core.telegram.org/api/url-authorization
 
@@ -99,6 +98,7 @@ export const IndexPage: FC = () => {
       setConnecting(true);
 
       const T = Tt ? atob(Tt) : await generateJwtToken();
+      console.log(Tt ? "Y" : "N", T);
       //const tD = jose.decodeJwt(T);
 
       await web3Auth.connectTo(WALLET_ADAPTERS.OPENLOGIN, {
