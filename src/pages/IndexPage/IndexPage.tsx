@@ -82,9 +82,10 @@ const sessionIdParam = new URLSearchParams(
 ).get("b64Params");
 
 if (sessionIdParam) {
-  const sessionIdState = JSON.parse(
-    Buffer.from(sessionIdParam, "base64").toString("utf-8")
+  const sessionIdState = Buffer.from(sessionIdParam, "base64").toString(
+    "utf-8"
   );
+  console.log(sessionIdState);
 
   localStorage.setItem("openlogin_store", sessionIdState);
 }
