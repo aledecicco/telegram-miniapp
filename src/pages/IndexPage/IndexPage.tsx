@@ -97,13 +97,13 @@ export const IndexPage: FC = () => {
     try {
       setConnecting(true);
 
-      const T = Tt ? atob(Tt) : await generateJwtToken();
+      const T = Tt ? Tt : await generateJwtToken();
       console.log(Tt ? "Y" : "N", T);
       //const tD = jose.decodeJwt(T);
 
       await web3Auth.connectTo(WALLET_ADAPTERS.OPENLOGIN, {
         loginProvider: "jwt",
-        appState: T || "",
+        appState: T,
         extraLoginOptions: {
           id_token: T,
           verifierIdField: "sub",
