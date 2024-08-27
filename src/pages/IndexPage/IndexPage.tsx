@@ -48,37 +48,33 @@ const privateKey = await jose.importPKCS8(pk, "RS256");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const generateJwtToken = async () => {
-  try {
-    const initData = Object.fromEntries(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      new URLSearchParams((window as any).Telegram.WebApp.initData)
-    );
-    const validator = new AuthDataValidator({
-      botToken: "7411142733:AAHwKdl1FVOU_Dtw7UMRDi_4mG9aHr2FN0g",
-    });
-    const data = objectToAuthDataMap(initData || {});
-    const user = await validator.validate(data);
+  const initData = Object.fromEntries(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    new URLSearchParams((window as any).Telegram.WebApp.initData)
+  );
+  const validator = new AuthDataValidator({
+    botToken: "7411142733:AAHwKdl1FVOU_Dtw7UMRDi_4mG9aHr2FN0g",
+  });
+  const data = objectToAuthDataMap(initData || {});
+  const user = await validator.validate(data);
 
-    const payload = {
-      telegram_id: user.id,
-      username: user.username,
-      avatar_url: user.photo_url,
-      sub: user.id.toString(),
-      name: user.first_name,
-      iss: "https://api.telegram.org",
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 60 * 60,
-    };
+  const payload = {
+    telegram_id: user.id,
+    username: user.username,
+    avatar_url: user.photo_url,
+    sub: user.id.toString(),
+    name: user.first_name,
+    iss: "https://api.telegram.org",
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 60 * 60,
+  };
 
-    return new jose.SignJWT(payload)
-      .setProtectedHeader({
-        alg: "RS256",
-        keyid: "b183cbbf2eedc92b022998f",
-      })
-      .sign(privateKey);
-  } catch (e) {
-    alert(e);
-  }
+  return new jose.SignJWT(payload)
+    .setProtectedHeader({
+      alg: "RS256",
+      keyid: "b183cbbf2eedc92b022998f",
+    })
+    .sign(privateKey);
 };
 //const b64 = new URLSearchParams(window.location.hash.substring(1)).get("b64Params");
 const Tt = new URLSearchParams(window.location.hash.substring(1)).get("state");
@@ -103,13 +99,16 @@ export const IndexPage: FC = () => {
       setConnecting(true);
 
       const T = Tt ? atob(Tt) : await generateJwtToken();
-      console.log(T);
+      const tD = jose.decodeJwt(T);
+
       await web3Auth.connectTo(WALLET_ADAPTERS.OPENLOGIN, {
         loginProvider: "jwt",
         appState: T || "",
         extraLoginOptions: {
           idToken: T,
+          verifier: "telegram-verifier-111",
           verifierIdField: "sub",
+          verifierId: tD.sub,
         },
       });
     } catch (e) {
