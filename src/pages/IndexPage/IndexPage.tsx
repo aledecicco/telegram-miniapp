@@ -108,7 +108,7 @@ export const IndexPage: FC = () => {
         loginProvider: "jwt",
         appState: T || "",
         extraLoginOptions: {
-          id_token: T,
+          idToken: T,
           verifierIdField: "sub",
         },
       });
